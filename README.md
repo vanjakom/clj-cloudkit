@@ -2,6 +2,7 @@
 
 ## Usage
 
+```
 (require '[clj-cloudkit.client :as cloudkit])
 (require '[clj-cloudkit.filter :as cloudkit-filter])
 (require '[clj-cloudkit.sort :as cloudkit-sort])
@@ -17,6 +18,7 @@
   nil
   (list (cloudkit-sort/descending "<field>")))
 
+```
 
 ## useful links
 
