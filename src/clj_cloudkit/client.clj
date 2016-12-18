@@ -3,6 +3,8 @@
 (require '[clojure.data.json :as json])
 (require '[clj-http.client :as http])
 
+(require '[clj-cloudkit.operation :as operation])
+
 (declare create-default-configuration)
 (declare execute-request)
 (declare create-signature-fn)
@@ -155,34 +157,48 @@
                                       operations-seq)}))]
     (extract-records (:records response))))
 
+; todo
+; maybe redefine assets to support asset upload for not existing record ( new records ), this would be
+; optimization in number of requests sent because after asset upload modify request must be made
+; currently assets-upload supports only asset upload for existing records by requiring record
+; asset upload will make records-modify call
 (defn assets-upload
   "Request tokens for asset fields in new or existing records used in another request to upload asset data.
   Note: currently supports only single asset-upload"
-  [client record-name record-type record-field asset-input-stream]
+  [client record record-type record-field asset-input-stream]
   (let [response-token (first
-                         (execute-request
-                           (assoc
-                             client
-                             :path-params
-                             (list :server-uri "database" :version :container
-                                   :environment :database "assets" "upload")
-                             :body
-                             {
-                               "tokens" (list {
-                                                "recordName" record-name
-                                                "recordType" record-type
-                                                "fieldName" record-field})})))
+                         (:tokens (execute-request
+                                    (assoc
+                                       client
+                                       :path-params
+                                       (list :server-uri "database" :version :container
+                                             :environment :database "assets" "upload")
+                                       :body
+                                       {
+                                         "tokens" (list {
+                                                          "recordName" (:recordName (meta record))
+                                                          "recordType" record-type
+                                                          "fieldName" record-field})}))))
         upload-url (:url response-token)]
     (let [upload-response (clj-http.client/post
                             upload-url
                             {
-                              :content asset-input-stream})]
-      (if (not (= (:status upload-response 200)))
-        (throw (ex-info "Unable to upload asset" upload-response))
-        (:body upload-response)))))
+                              :body asset-input-stream})]
+      (if (= (:status upload-response 200))
+        (let [asset-info (json/read-str (:body upload-response) :key-fn keyword)]
+          (records-modify
+            client
+            (list
+              (operation/update
+                (with-meta
+                  {
+                    :data (:singleFile asset-info)}
+                  (meta record))
+                record-type))))
+        (throw (ex-info "Unable to upload asset" upload-response))))))
 
 
-(defn assets-downlaod
+(defn assets-download
   "Retrieves asset from CloudKit url given in record"
   [client asset-url]
   (let [response (http/get asset-url)]
@@ -254,7 +270,9 @@
                          :headers headers
                          :query-params query-params}))]
       (if (= (:status response) 200)
-        (json/read-str (:body response) :key-fn keyword)
+        (let [content (json/read-str (:body response) :key-fn keyword)]
+          (println "Response: " content)
+          content)
         (throw (ex-info "Status not 200" response))))))
 
 (defn- create-signature-fn [private-key-hex]
@@ -305,22 +323,22 @@
           (:fields original-record)
           (select-keys
             original-record
-            [:recordType :recordChangeTag :created :modified]))
+            [:recordName :recordType :recordChangeTag :created :modified]))
         :_id
         (:recordName original-record)))
     original-records-seq))
 
 (defn- serialize-record [record]
-  (let [cloudkit-record {
-                          :fields (reduce
-                                    (fn [state [key value]]
-                                      (assoc
-                                        state
-                                        key
-                                        {:value value}))
-                                    {}
-                                    (dissoc record :_id))}]
-    (if-let [record-name (:_id record)]
-      (assoc cloudkit-record "recordName" record-name)
-      cloudkit-record)))
+  (let [cloudkit-record (merge
+                          {
+                            :fields (reduce
+                                      (fn [state [key value]]
+                                        (assoc
+                                          state
+                                          key
+                                          {:value value}))
+                                      {}
+                                      (dissoc record :_id))}
+                          (dissoc (meta record) :fields))]
+    cloudkit-record))
 

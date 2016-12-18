@@ -1,5 +1,12 @@
 (ns clj-cloudkit.filter)
 
+(defn equals [field value]
+  {
+    "comparator" "EQUALS"
+    "fieldName" field
+    "fieldValue" {
+                   "value" value }})
+
 (defn near [field location distance]
   {
     "comparator" "NEAR"
