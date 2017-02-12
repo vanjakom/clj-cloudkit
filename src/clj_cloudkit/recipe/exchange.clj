@@ -34,4 +34,4 @@
 
 (defn pop-json [client type]
   (if-let [data (pop client type)]
-    (json/read-str data :key-fn keyword)))
+    (json/read data :key-fn (new java.io.InputStreamReader keyword))))

@@ -157,6 +157,23 @@
                                       operations-seq)}))]
     (extract-records (:records response))))
 
+(defn record-create [client record record-type]
+  (first
+    (records-modify
+      client
+      [(operation/create
+         record
+         record-type)])))
+
+
+(defn record-force-update [client record record-type]
+  (first
+    (records-modify
+      client
+      [(operation/force-update
+         record
+         record-type)])))
+
 ; todo
 ; maybe redefine assets to support asset upload for not existing record ( new records ), this would be
 ; optimization in number of requests sent because after asset upload modify request must be made
@@ -199,9 +216,9 @@
 
 
 (defn assets-download
-  "Retrieves asset from CloudKit url given in record"
+  "Retrieves asset from CloudKit url given in record. If successful response will be stream."
   [client asset-url]
-  (let [response (http/get asset-url)]
+  (let [response (http/get asset-url {:as :stream})]
     (if (= (:status response) 200)
       (:body response)
       (throw (ex-info "Status not 200" response)))))
