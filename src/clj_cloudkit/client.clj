@@ -165,6 +165,13 @@
          record
          record-type)])))
 
+(defn record-update [client record record-type]
+  (first
+    (records-modify
+      client
+      [(operation/update
+         record
+         record-type)])))
 
 (defn record-force-update [client record record-type]
   (first

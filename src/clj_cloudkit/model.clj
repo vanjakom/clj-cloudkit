@@ -1,5 +1,8 @@
 (ns clj-cloudkit.model)
 
+(def creation-date "creationDate")
+(def created-by "creatorUserRecordID")
+
 (defn create-record-meta [record-name]
   {
     :recordName record-name})

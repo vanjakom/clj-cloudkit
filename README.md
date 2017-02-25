@@ -1,5 +1,20 @@
 # clj-cloudkit
 
+## Setup
+
+### create public key:
+```
+openssl ecparam -name prime256v1 -genkey -noout -out eckey.pem
+```
+
+### output key in format needed by client and used in apple documentation:
+```
+openssl ec -in key.pem -noout -text
+```
+( Concatenate private key by removing colons )
+
+key should be reported to Server-to-Server Keys in CloudKit dashboard.
+
 ## Usage
 
 ```
@@ -19,6 +34,19 @@
   (list (cloudkit-sort/descending "<field>")))
 
 ```
+
+### to setup production client:
+```
+(def cloudkit-client-prod
+  (cloudkit/auth-server-to-server
+    (assoc
+      (cloudkit/create-client "<container>")
+      :environment
+      "production")
+    "<private-key-hex>"
+    "<key-id>"))
+```
+Note: each env ( development / production ) requires different key
 
 ## useful links
 
