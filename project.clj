@@ -10,4 +10,6 @@
                   [org.clojure/clojure "1.8.0"]
                   [org.clojure/data.json "0.2.6"]
                   [clj-http "2.2.0"]
-                  [lein-light-nrepl "0.3.2"]])
+                  [lein-light-nrepl "0.3.2"]
+
+                  [com.mungolab/clj-common "0.1.0-SNAPSHOT"]])

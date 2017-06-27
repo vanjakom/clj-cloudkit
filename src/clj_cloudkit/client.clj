@@ -5,6 +5,7 @@
 
 (require '[clj-cloudkit.operation :as operation])
 
+(use 'clj-common.clojure)
 
 ; ### problems:
 ; # join / when path params, auth-api-token
@@ -102,23 +103,43 @@
         :body-str
         body-str)))))
 
+(defn ^:private records-query-internal [client record-type filter-seq sort-seq continuation-marker]
+  (println "doing query")
+  (execute-request
+    (assoc
+      client
+      :path-params
+      (list :server-uri "database" :version :container
+            :environment :database "records" "query")
+      :body
+      (assoc-if-value
+        {
+          "zoneWide" false
+          "query" {
+                    "recordType" record-type
+                    "filterBy" (if (nil? filter-seq) '() filter-seq)
+                    "sortBy" (if (nil? sort-seq) '() sort-seq)}}
+        "continuationMarker"
+        continuation-marker))))
+
 (defn records-query
-  "Fetching Records Using a Query (records/query)"
+  "Fetching Records Using a Query (records/query)
+  note: only one fetch will be performed, meaning only max records per query will be returned"
   [client record-type filter-seq sort-seq]
-  (let [response (execute-request
-                   (assoc
-                     client
-                     :path-params
-                     (list :server-uri "database" :version :container
-                           :environment :database "records" "query")
-                     :body
-                     {
-                       "zoneWide" false
-                       "query" {
-                                 "recordType" record-type
-                                 "filterBy" (if (nil? filter-seq) '() filter-seq)
-                                 "sortBy" (if (nil? sort-seq) '() sort-seq)}}))]
-    (extract-records (:records response))))
+    (extract-records (:records (records-query-internal client record-type filter-seq sort-seq nil))))
+
+(defn records-query-all
+  "Fetching Records Using a Query (records/query)
+  note: fetching will be done when all records are retrieved"
+  [client record-type filter-seq sort-seq]
+
+  (loop [records '() continuation-marker nil]
+    (let [response (records-query-internal client record-type filter-seq sort-seq continuation-marker)
+          new-records (concat records (extract-records (:records response)))
+          new-continuation-marker (:continuationMarker response)]
+      (if (some? new-continuation-marker)
+        (recur new-records new-continuation-marker)
+        new-records))))
 
 ; it seems that records-lookup will return entry with recordName for records that don't
 ; exist on server
