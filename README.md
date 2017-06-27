@@ -48,6 +48,20 @@ key should be reported to Server-to-Server Keys in CloudKit dashboard.
 ```
 Note: each env ( development / production ) requires different key
 
+
+### to write entry with metadata ( record name )
+
+```
+(cloudkit/record-force-update
+  *cloudkit-client*
+  (with-meta
+    {
+      :data "foo"}
+    (cloudkit-model/create-record-meta "foo-entry"))
+  "Test")
+```
+
+
 ## useful links
 
 https://vanjakom.wordpress.com/2016/08/01/cloudkit-server-to-server-request-in-jvm-environment/

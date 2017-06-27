@@ -23,3 +23,13 @@
     :operationType "forceReplace"
     :recordType record-type
     :record record})
+
+(defn delete [record]
+  {
+    :operationType "delete"
+    :record record})
+
+(defn force-delete [record]
+  {
+    :operationType "forceDelete"
+    :record record})

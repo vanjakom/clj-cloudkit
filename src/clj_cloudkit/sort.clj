@@ -5,9 +5,19 @@
     "fieldName" field-name
     "ascending" true})
 
+(defn ascending-system [system-field-name]
+  {
+    "systemFieldName" system-field-name
+    "ascending" true})
+
 (defn descending [field-name]
   {
     "fieldName" field-name
+    "ascending" false})
+
+(defn descending-system [system-field-name]
+  {
+    "systemFieldName" system-field-name
     "ascending" false})
 
 (defn ascending-location [field-name location]

@@ -5,6 +5,20 @@
 
 (require '[clj-cloudkit.operation :as operation])
 
+
+; ### problems:
+; # join / when path params, auth-api-token
+; # repetition of body-str calculation
+; # execute-request uses insecure-true
+; # multiple operations request ( records-modify ) is returning 200 status and per record
+; failed message
+
+; ### notes :
+; # auth function is responsable for adding of :body-str, after that point body should
+;   not be changed
+;
+
+
 (declare create-default-configuration)
 (declare execute-request)
 (declare create-signature-fn)
@@ -13,15 +27,7 @@
 (declare extract-records)
 (declare serialize-record)
 
-; ### problems:
-; join / when path params, auth-api-token
-; repetition of body-str calculation
-; execute-request uses insecure-true
-
-; ### notes :
-; # auth function is responsable for adding of :body-str, after that point body should
-;   not be changed
-;
+(def ^:dynamic *debug* false)
 
 (defn create-client
   "Creates client which should be used as arg to all api calls"
@@ -62,7 +68,6 @@
                                    (rest path))))
               sign-request (str request-date-iso ":" body-sha256-base64 ":" subpath)
               signature (signature-fn sign-request)]
-          (println "subpath: " subpath)
           (assoc
             request
             :headers
@@ -157,6 +162,12 @@
                                       operations-seq)}))]
     (extract-records (:records response))))
 
+(defn record-lookup [client record-name]
+  (first
+    (records-lookup
+      client
+      [record-name])))
+
 (defn record-create [client record record-type]
   (first
     (records-modify
@@ -241,6 +252,8 @@
                            :environment "public" "users" "caller")))]
     response))
 
+; private functions
+
 (defn- create-default-configuration []
   {
     :server-uri "https://api.apple-cloudkit.com"
@@ -275,9 +288,9 @@
                      path))
         body (:body final-request)
         body-str (:body-str final-request)]
-    (println "Path: " path-str)
-    (println "headers:" headers)
-    (println "Body:" body-str)
+    (if *debug* (println "request headers: " headers))
+    (if *debug* (println "request query: " query-params))
+    (if *debug* (println "request body: " body-str))
     (let [response (if
                      (not (nil? body))
                      (http/post
@@ -293,9 +306,10 @@
                          :insecure? true
                          :headers headers
                          :query-params query-params}))]
+      (if *debug* (println "response: " response))
       (if (= (:status response) 200)
         (let [content (json/read-str (:body response) :key-fn keyword)]
-          (println "Response: " content)
+          ; (println content)
           content)
         (throw (ex-info "Status not 200" response))))))
 

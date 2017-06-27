@@ -15,9 +15,25 @@
                    "value" location}
     "distance" distance})
 
+(defn list-contains [field value]
+  {
+    "comparator" "LIST_CONTAINS"
+    "fieldName" field
+    "fieldValue" {
+                   "value" value}})
+
 (defn list-contains-all [field values]
   {
     "comparator" "LIST_CONTAINS_ALL"
+    "fieldName" field
+    "fieldValue" {
+                   "value" values}})
+
+; found this one on
+; https://developer.apple.com/reference/cloudkitjs/cloudkit.queryfiltercomparator
+(defn list-contains-any [field values]
+  {
+    "comparator" "LIST_CONTAINS_ANY"
     "fieldName" field
     "fieldValue" {
                    "value" values}})
