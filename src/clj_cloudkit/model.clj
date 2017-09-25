@@ -23,15 +23,29 @@
 (def ^:const maximum-number-of-operations-request 200)
 (def ^:const maximum-number-of-records-response 200)
 
-
-(defn create-record-meta [record-name]
-  {
-    :recordName record-name})
-
+(defn create-record-meta
+  ([record-type record-name]
+   {
+      :recordType record-type
+      :recordName record-name})
+  ([record-type]
+   {
+     :recordType record-type}))
 
 ; timestamp is in milliseconds
+; A date or time value. Represented as a number in milliseconds between midnight
+; on January 1, 1970, and the specified date or time.
 
 (defn create-cl-location [longitude latitude]
   {
     :longitude longitude
     :latitude latitude})
+
+(defn record-type [record]
+  (:recordType (meta record)))
+
+(defn record-name [record]
+  (:recordName (meta record)))
+
+(defn asset-download-url [asset-field-value]
+  (:downloadURL asset-field-value))

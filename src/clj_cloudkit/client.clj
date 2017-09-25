@@ -1,23 +1,34 @@
 (ns clj-cloudkit.client)
 
+(use 'clj-cloudkit.model)
+
 (require '[clojure.data.json :as json])
 (require '[clj-http.client :as http])
 
 (require '[clj-cloudkit.operation :as operation])
 
+(require '[clj-common.logging :as logging])
 (use 'clj-common.clojure)
+
+(use 'clj-common.debug)
 
 ; ### problems:
 ; # join / when path params, auth-api-token
 ; # repetition of body-str calculation
 ; # execute-request uses insecure-true
-; # multiple operations request ( records-modify ) is returning 200 status and per record
-; failed message
+; # throw errors in *throw-error* set for per record failed request inside records-modify and
+;   records-lookup, read bellow
 
 ; ### notes :
+; # records-modify and records-lookup error handling
+;   all functions which perform operations ( read or write ) on multiple records return
+;   status 200 if transport was ok, but will return per record status ( currently if
+;   :fields exist we have record, if not we have error ), clj-cloudkit will only filter
+;   records back, errors will be thrown away, in future this would change. to debug these
+;   issues in current implementation use *debug* binding to have responses visible
+
 ; # auth function is responsable for adding of :body-str, after that point body should
 ;   not be changed
-;
 
 
 (declare create-default-configuration)
@@ -163,25 +174,30 @@
   "Apply multiple types of operations—such as creating, updating, replacing,
   and deleting records— to different records in a single request."
   [client operations-seq]
-  (let [response (execute-request
-                   (assoc
-                     client
-                     :path-params
-                     (list :server-uri "database" :version :container
-                           :environment :database "records" "modify")
-                     :body
-                     {
-                       "operations" (map
-                                      (fn [operation]
-                                        (assoc
-                                          operation
-                                          :record
-                                          (assoc
-                                            (serialize-record (:record operation))
-                                            "recordType"
-                                            (:recordType operation))))
-                                      operations-seq)}))]
-    (extract-records (:records response))))
+  (reduce
+    (fn [results operations-chunk]
+        (let [request (assoc
+                        client
+                        :path-params
+                        (list :server-uri "database" :version :container
+                              :environment :database "records" "modify")
+                        :body
+                        {
+                          "operations" (map
+                                         (fn [operation]
+                                           (assoc
+                                             operation
+                                             :record
+                                             (serialize-record (:record operation))))
+                                         operations-chunk)})
+               response (execute-request request)]
+          (concat results (extract-records (:records response)))))
+    '()
+    (partition
+      maximum-number-of-operations-request
+      maximum-number-of-operations-request
+      nil
+      operations-seq)))
 
 (defn record-lookup [client record-name]
   (first
@@ -205,13 +221,12 @@
          record
          record-type)])))
 
-(defn record-force-update [client record record-type]
+(defn record-force-update [client record]
   (first
     (records-modify
       client
       [(operation/force-update
-         record
-         record-type)])))
+         record)])))
 
 ; todo
 ; maybe redefine assets to support asset upload for not existing record ( new records ), this would be
@@ -221,7 +236,7 @@
 (defn assets-upload
   "Request tokens for asset fields in new or existing records used in another request to upload asset data.
   Note: currently supports only single asset-upload"
-  [client record record-type record-field asset-input-stream]
+  [client record record-field asset-input-stream]
   (let [response-token (first
                          (:tokens (execute-request
                                     (assoc
@@ -232,8 +247,8 @@
                                        :body
                                        {
                                          "tokens" (list {
-                                                          "recordName" (:recordName (meta record))
-                                                          "recordType" record-type
+                                                          "recordName" (record-name record)
+                                                          "recordType" (record-type record)
                                                           "fieldName" record-field})}))))
         upload-url (:url response-token)]
     (let [upload-response (clj-http.client/post
@@ -248,9 +263,8 @@
               (operation/update
                 (with-meta
                   {
-                    :data (:singleFile asset-info)}
-                  (meta record))
-                record-type))))
+                    record-field (:singleFile asset-info)}
+                  (meta record))))))
         (throw (ex-info "Unable to upload asset" upload-response))))))
 
 
@@ -385,7 +399,9 @@
             [:recordName :recordType :recordChangeTag :created :modified]))
         :_id
         (:recordName original-record)))
-    original-records-seq))
+    (filter
+      #(some? (:fields %1))
+      original-records-seq)))
 
 (defn- serialize-record [record]
   (let [cloudkit-record (merge

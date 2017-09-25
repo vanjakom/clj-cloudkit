@@ -1,27 +1,29 @@
 (ns clj-cloudkit.operation)
 
-(defn create [record record-type]
+(use 'clj-cloudkit.model)
+
+(defn create [record]
   {
     :operationType "create"
-    :recordType record-type
+    :recordType (record-type record)
     :record record})
 
-(defn update [record record-type]
+(defn update [record]
   {
     :operationType "update"
-    :recordType record-type
+    :recordType (record-type record)
     :record record})
 
-(defn force-update [record record-type]
+(defn force-update [record]
   {
     :operationType "forceUpdate"
-    :recordType record-type
+    :recordType (record-type record)
     :record record})
 
-(defn force-replace [record record-type]
+(defn force-replace [record]
   {
     :operationType "forceReplace"
-    :recordType record-type
+    :recordType (record-type record)
     :record record})
 
 (defn delete [record]
