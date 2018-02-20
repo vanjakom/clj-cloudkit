@@ -7,6 +7,20 @@
     "fieldValue" {
                    "value" value }})
 
+(defn greater-or-equals [field value]
+  {
+    "comparator" "GREATER_THAN_OR_EQUALS"
+    "fieldName" field
+    "fieldValue" {
+                   "value" value}})
+
+(defn greater [field value]
+  {
+    "comparator" "GREATER_THAN"
+    "fieldName" field
+    "fieldValue" {
+                   "value" value}})
+
 (defn near [field location distance]
   {
     "comparator" "NEAR"

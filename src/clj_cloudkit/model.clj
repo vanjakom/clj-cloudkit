@@ -32,6 +32,11 @@
    {
      :recordType record-type}))
 
+(defn create-empty-record [record-type record-name]
+  (with-meta
+    {}
+    (create-record-meta record-type record-name)))
+
 ; timestamp is in milliseconds
 ; A date or time value. Represented as a number in milliseconds between midnight
 ; on January 1, 1970, and the specified date or time.
@@ -46,6 +51,11 @@
 
 (defn record-name [record]
   (:recordName (meta record)))
+
+(defn record-creator
+  "Returns user id of user who created record"
+  [record]
+  (:userRecordName (:created (meta record))))
 
 (defn asset-download-url [asset-field-value]
   (:downloadURL asset-field-value))

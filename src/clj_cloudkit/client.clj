@@ -152,6 +152,25 @@
         (recur new-records new-continuation-marker)
         new-records))))
 
+(defn records-query-seq
+  "Fetching all records using query (records/query) creating seq
+  note: fetching will be done during seq iteration once needed"
+  [client record-type filter-seq sort-seq]
+
+  (let [fetch-fn (fn fetch-fn [continuation-marker [element & rest-of-elements]]
+                   (if (some? element)
+                     (lazy-seq (cons element (fetch-fn continuation-marker rest-of-elements)))
+                     (if-let [continuation-marker continuation-marker]
+                       (let [{records :records continuation-marker :continuationMarker}
+                             (records-query-internal client record-type filter-seq sort-seq continuation-marker)]
+                         (if (> (count records) 0)
+                           (fetch-fn continuation-marker (extract-records records))
+                           nil))
+                       nil)))]
+    (let [{records :records continuation-marker :continuationMarker}
+          (records-query-internal client record-type filter-seq sort-seq nil)]
+      (fetch-fn continuation-marker (extract-records records)))))
+
 ; it seems that records-lookup will return entry with recordName for records that don't
 ; exist on server
 (defn records-lookup
@@ -323,9 +342,14 @@
                      path))
         body (:body final-request)
         body-str (:body-str final-request)]
-    (if *debug* (println "request headers: " headers))
-    (if *debug* (println "request query: " query-params))
-    (if *debug* (println "request body: " body-str))
+    (if *debug*
+      (logging/report
+        {
+          :fn 'clj-cloudkit.client/execute-request
+          :path path-str
+          :headers headers
+          :query query-params
+          :body body-str}))
     (let [response (if
                      (not (nil? body))
                      (http/post
@@ -341,7 +365,11 @@
                          :insecure? true
                          :headers headers
                          :query-params query-params}))]
-      (if *debug* (println "response: " response))
+      (if *debug*
+        (logging/report
+          {
+            :fn 'clj-cloudkit.client/execute-request
+            :response response}))
       (if (= (:status response) 200)
         (let [content (json/read-str (:body response) :key-fn keyword)]
           ; (println content)
