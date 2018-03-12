@@ -7,6 +7,18 @@
     "fieldValue" {
                    "value" value }})
 
+; tried with generic solution but problem is with complex
+; value that is set as map, but I don't know key
+; https://developer.apple.com/library/content/documentation/DataManagement/Conceptual/CloudKitWebServicesReference/QueryingRecords.html#//apple_ref/doc/uid/TP40015240-CH5-SW4
+
+(defn record-name-equals [value]
+  {
+    "comparator" "EQUALS"
+    "systemFieldName" "recordName"
+    "fieldValue" {
+                   "value" {
+                             "recordName" value }}})
+
 (defn greater-or-equals [field value]
   {
     "comparator" "GREATER_THAN_OR_EQUALS"
