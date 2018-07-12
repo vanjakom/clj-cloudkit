@@ -63,3 +63,23 @@
     "fieldName" field
     "fieldValue" {
                    "value" values}})
+
+
+(defn not-list-contains-any [field values]
+  {
+    "comparator" "NOT_LIST_CONTAINS_ANY"
+    "fieldName" field
+    "fieldValue" {
+                   "value" values}})
+
+
+(defn not-in [field value]
+  {
+    "comparator" "NOT_IN"
+    "fieldName" field
+    "fieldValue" {
+                   "value" value}})
+
+
+
+
