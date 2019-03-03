@@ -247,6 +247,12 @@
       [(operation/force-update
          record)])))
 
+(defn record-force-replace [client record]
+  (first
+   (records-modify
+    client
+    [(operation/force-replace record)])))
+
 ; todo
 ; maybe redefine assets to support asset upload for not existing record ( new records ), this would be
 ; optimization in number of requests sent because after asset upload modify request must be made
