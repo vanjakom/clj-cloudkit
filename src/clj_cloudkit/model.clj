@@ -18,6 +18,18 @@
 ;(def ^:const creation-date "creationDate")
 ;(def ^:const created-by "creatorUserRecordID")
 
+
+;; fieldName systemFieldName
+;; ___recordId recordName
+;; ___share share
+;; ___parent parent
+;; ___createdBy createdUserRecordName
+;; ___createTime createdTimestamp
+;; ___modTime modifiedTimestamp
+;; ___modifiedBy modifiedUserRecordName
+;;
+;; either use *-system filter and sort operations with mapped name or use field
+;; name with __, for createdTimestamp field name is "___createTime"
 (def ^:const created-timestamp "createdTimestamp")
 
 (def ^:const maximum-number-of-operations-request 200)
