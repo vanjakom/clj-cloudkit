@@ -348,6 +348,7 @@
                      path))
         body (:body final-request)
         body-str (:body-str final-request)]
+    (println "[CLOUDKIT] request" path-str)
     (if *debug*
       (logging/report
         {
